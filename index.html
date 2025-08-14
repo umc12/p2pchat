@@ -2,35 +2,26 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>WhatsApp Benzeri P2P Chat</title>
+<title>WhatsApp Clone P2P</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script src="js/app.js" defer></script>
 </head>
 <body>
 <div id="container">
-  <header>
-    <h1>P2P Şifreli Chat</h1>
-  </header>
+  <header><h1>P2P Şifreli Chat</h1></header>
 
   <section id="auth">
-    <h2>Kayıt / Giriş</h2>
     <input id="username" placeholder="Kullanıcı Adı">
-    <input id="password" type="password" placeholder="Şifre">
-    <div class="auth-buttons">
-      <button onclick="register()">Kayıt Ol</button>
-      <button onclick="login()">Giriş Yap</button>
-    </div>
+    <button onclick="login()">Giriş Yap</button>
   </section>
 
   <section id="app" class="hidden">
-    <aside id="groupPanel">
-      <h2>Gruplar / Kişiler</h2>
-      <input id="groupName" placeholder="Yeni Grup İsmi">
+    <aside id="contacts">
+      <h2>Kişiler / Gruplar</h2>
+      <ul id="contactList"></ul>
+      <input id="newGroup" placeholder="Yeni Grup İsmi">
       <button onclick="createGroup()">Grup Kur</button>
-      <input id="inviteUser" placeholder="Kullanıcı Davet Et">
-      <button onclick="inviteUser()">Davet Et</button>
-      <ul id="groupList"></ul>
     </aside>
 
     <main id="chatPanel">
