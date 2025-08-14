@@ -71,17 +71,18 @@ function updateGroupList(){
   });
 }
 
-// Mesaj gönderme
 function sendMessage(){
   let msg=document.getElementById('message').value;
   if(!msg) return;
-  let encrypted=CryptoJS.AES.encrypt(msg,'anahtar123').toString();
-  document.getElementById('chat').innerHTML+=`<div><b>Sen:</b> ${msg}</div>`;
-  console.log("Şifreli mesaj:",encrypted);
+  let chat=document.getElementById('chat');
+  let div=document.createElement('div');
+  div.classList.add('message','sent');
+  div.textContent=msg;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
   document.getElementById('message').value='';
 }
 
-// Dosya gönderme simülasyonu
 document.getElementById('fileInput').addEventListener('change',function(e){
   let file=e.target.files[0];
   if(!file) return;
@@ -89,8 +90,12 @@ document.getElementById('fileInput').addEventListener('change',function(e){
   reader.onload=function(){
     let data=reader.result;
     let encrypted=CryptoJS.AES.encrypt(data,'anahtar123').toString();
-    document.getElementById('chat').innerHTML+=`<div><b>Sen (dosya):</b> ${file.name}</div>`;
-    console.log("Şifreli dosya:",encrypted);
+    let chat=document.getElementById('chat');
+    let div=document.createElement('div');
+    div.classList.add('message','sent');
+    div.textContent="Dosya gönderildi: "+file.name;
+    chat.appendChild(div);
+    chat.scrollTop=chat.scrollHeight;
   }
   reader.readAsDataURL(file);
 });
