@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>P2P Şifreli Chat</title>
+<title>WhatsApp Benzeri P2P Chat</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script src="js/app.js" defer></script>
@@ -10,7 +10,7 @@
 <body>
 <div id="container">
   <header>
-    <h1>Şifreli P2P Chat</h1>
+    <h1>P2P Şifreli Chat</h1>
   </header>
 
   <section id="auth">
@@ -25,7 +25,7 @@
 
   <section id="app" class="hidden">
     <aside id="groupPanel">
-      <h2>Gruplar</h2>
+      <h2>Gruplar / Kişiler</h2>
       <input id="groupName" placeholder="Yeni Grup İsmi">
       <button onclick="createGroup()">Grup Kur</button>
       <input id="inviteUser" placeholder="Kullanıcı Davet Et">
@@ -34,11 +34,12 @@
     </aside>
 
     <main id="chatPanel">
-      <h2>Mesajlaşma</h2>
       <div id="chat"></div>
-      <input id="message" placeholder="Mesajınızı yazın...">
-      <button onclick="sendMessage()">Gönder</button>
-      <input type="file" id="fileInput">
+      <div id="messageInput">
+        <input id="message" placeholder="Mesaj yazın...">
+        <button onclick="sendMessage()">Gönder</button>
+        <input type="file" id="fileInput">
+      </div>
     </main>
   </section>
 </div>
