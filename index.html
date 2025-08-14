@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>P2P Sohbet — Şifreli (WebRTC + PeerJS)</title>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <style>
+    :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--accent:#22c55e;--danger:#ef4444;--border:#1f2937;}
+    *{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:radial-gradient(1200px 600px at 70% -10%, rgba(34,197,94,.08), transparent), linear-gradient(180deg,#0b1220,#0f172a 60%, #0b1220);color:var(--text)}
+    .wrap{max-width:1000px;margin:24px auto;padding:16px}.card{background:rgba(17,24,39,.75);backdrop-filter: blur(8px);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    header{padding:16px 20px;display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)} h1{margin:0;font-size:20px;letter-spacing:.2px} .muted{color:var(--muted)}
+    .grid{display:grid;gap:12px}.controls{padding:16px;display:grid;gap:12px;grid-template-columns:1.2fr 1fr auto auto;align-items:end}@media (max-width: 860px){.controls{grid-template-columns:1fr 1fr}}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px} input[type=text], input[type=url], input[type=number], textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);outline:none} input:focus, textarea:focus{border-color:#334155;box-shadow:0 0 0 3px rgba(51,65,85,.35)}
+    button{border:0;padding:10px 14px;border-radius:10px;background:var(--accent);color:#062c16;cursor:pointer;font-weight:700} button.secondary{background:#1f2937;color:#cbd5e1} button.ghost{background:transparent;border:1px solid #334155;color:#cbd5e1} button:disabled{opacity:.55;cursor:not-allowed}
+    .messages{background:#0b1220;border:1px solid var(--border);border-radius:14px;padding:12px;overflow:auto;scroll-behavior:smooth} .msg{margin:10px 0;display:flex;gap:10px;align-items:flex-start}.bubble{max-width:78%;padding:10px 12px;border-radius:12px;line-height:1.35;word-wrap:break-word;white-space:pre-wrap}.mine .bubble{background:#163427;border:1px solid #1e3a2f}.theirs .bubble{background:#101827;border:1px solid #2b3647}.meta{font-size:11px;color:#93a3b5;margin-bottom:4px}.system .bubble{background:#111827;border:1px dashed #334155;font-style:italic;opacity:.9}
+  </style>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<header>
+<h1>🔗 P2P Sohbet <span class="muted">(Şifreli)</span></h1>
+<div class="row">
+<span class="muted" id="status">Hazır…</span>
+</div>
+</header>
+
+<div class="controls">
+<div>
+<label for="room">Sohbet Kimliği</label>
+<input id="room" type="text" placeholder="ör. fen8a-sinif" autocomplete="off" />
+</div>
+<div>
+<label for="nick">Takma Ad</label>
+<input id="nick" type="text" placeholder="ör. ugur" autocomplete="nickname" />
+</div>
+<div>
+<label for="password">Sohbet Şifresi</label>
+<input id="password" type="text" placeholder="Şifre belirle" autocomplete="off" />
+</div>
+<div class="row">
+<button id="hostBtn" class="secondary">Sunucu (Host) Ol</button>
+<button id="joinBtn" class="secondary">Katıl</button>
+</div>
+</div>
+
+<div class="chat">
+<div id="messages" class="messages" aria-live="polite"></div>
+<textarea id="input" placeholder="Mesaj yaz…" disabled></textarea>
+<button id="sendBtn" disabled>Gönder</button>
+</div>
+</div>
+</div>
+
+<script>
+(() => {
+const qs = s => document.querySelector(s);
+const $room = qs('#room'); const $nick = qs('#nick'); const $password = qs('#password'); const $messages = qs('#messages'); const $input = qs('#input'); const $send = qs('#sendBtn'); const $host = qs('#hostBtn'); const $join = qs('#joinBtn');
+
+let peer = null; let isHost = false; const conns = new Map(); let conn = null;
+
+function encrypt(text, password){
+  if(!password) return text;
+  return btoa(unescape(encodeURIComponent(text.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^password.charCodeAt(i%password.length))).join(''))));
+}
+function decrypt(text, password){
+  if(!password) return text;
+  try{
+    const s = decodeURIComponent(escape(atob(text)));
+    return s.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^password.charCodeAt(i%password.length))).join('');
+  }catch{return '***HATALI MESAJ***';}
+}
+
+function addMsg(author,text,mine=false){
+  const row = document.createElement('div');
+  row.className = 'msg ' + (mine?'mine':'theirs');
+  row.innerHTML = `<div class="meta">${author} • ${new Date().toLocaleTimeString()}</div><div class="bubble">${text}</div>`;
+  $messages.appendChild(row);
+  $messages.scrollTop = $messages.scrollHeight;
+}
+
+function peerInit(idOrUndefined){
+  try{ if(peer) peer.destroy(); }catch{}
+  return new Peer(idOrUndefined, {host:'0.peerjs.com', port:443, path:'/', secure:true});
+}
+
+function setupHost(){
+  const roomId = $room.value.trim(); const nick = $nick.value.trim()||'host'; const pwd = $password.value;
+  if(!roomId) return alert('Sohbet Kimliği gir.');
+  isHost = true;
+  peer = peerInit(roomId);
+  peer.on('open', id => { addMsg('Sistem', `Oda açıldı: ${id}`); enableChat(true); });
+  peer.on('connection', c => {
+    conns.set(c.peer,c);
+    c.on('data', d => onData(c,d,pwd));
+  });
+}
+
+function setupJoin(){
+  const roomId = $room.value.trim(); const nick = $nick.value.trim()||'kullanici'; const pwd = $password.value;
+  if(!roomId) return alert('Sohbet Kimliği gir.');
+  isHost = false;
+  peer = peerInit();
+  peer.on('open', id=>{ conn = peer.connect(roomId,{reliable:true}); bindConn(conn,pwd); });
+}
+
+function bindConn(c,pwd){
+  c.on('open', ()=>{ enableChat(true); });
+  c.on('data', d=>onData(c,d,pwd));
+}
+
+function onData(c,d,pwd){
+  if(d.type==='msg') addMsg(d.n,decrypt(d.t,pwd),false);
+}
+
+function sendCurrent(){
+  const text = $input.value.trim(); const pwd = $password.value; if(!text) return;
+  const nick = $nick.value.trim()||'ben';
+  addMsg(nick,text,true);
+  const pkt = {type:'msg',n:nick,t:encrypt(text,pwd)};
+  if(isHost){for(const [_,conn] of conns) conn.send(pkt);} else if(conn && conn.open) conn.send(pkt);
+  $input.value='';
+}
+
+function enableChat(on){ $input.disabled=!on; $send.disabled=!on; }
+$send.addEventListener('click',sendCurrent);
+$input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCurrent();}});
+$host.addEventListener('click',setupHost);
+$join.addEventListener('click',setupJoin);
+})();
+</script>
+</body>
+</html>
