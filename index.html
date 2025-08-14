@@ -3,132 +3,446 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>P2P Sohbet — Şifreli (WebRTC + PeerJS)</title>
+  <title>P2P Sohbet — Gelişmiş (WebRTC + PeerJS)</title>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <style>
-    :root{--bg:#0b1220;--panel:#0f172a;--muted:#94a3b8;--text:#e5e7eb;--accent:#22c55e;--danger:#ef4444;--border:#1f2937;}
-    *{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:radial-gradient(1200px 600px at 70% -10%, rgba(34,197,94,.08), transparent), linear-gradient(180deg,#0b1220,#0f172a 60%, #0b1220);color:var(--text)}
-    .wrap{max-width:1000px;margin:24px auto;padding:16px}.card{background:rgba(17,24,39,.75);backdrop-filter: blur(8px);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    header{padding:16px 20px;display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)} h1{margin:0;font-size:20px;letter-spacing:.2px} .muted{color:var(--muted)}
-    .grid{display:grid;gap:12px}.controls{padding:16px;display:grid;gap:12px;grid-template-columns:1.2fr 1fr auto auto;align-items:end}@media (max-width: 860px){.controls{grid-template-columns:1fr 1fr}}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px} input[type=text], input[type=url], input[type=number], textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);outline:none} input:focus, textarea:focus{border-color:#334155;box-shadow:0 0 0 3px rgba(51,65,85,.35)}
-    button{border:0;padding:10px 14px;border-radius:10px;background:var(--accent);color:#062c16;cursor:pointer;font-weight:700} button.secondary{background:#1f2937;color:#cbd5e1} button.ghost{background:transparent;border:1px solid #334155;color:#cbd5e1} button:disabled{opacity:.55;cursor:not-allowed}
-    .messages{background:#0b1220;border:1px solid var(--border);border-radius:14px;padding:12px;overflow:auto;scroll-behavior:smooth} .msg{margin:10px 0;display:flex;gap:10px;align-items:flex-start}.bubble{max-width:78%;padding:10px 12px;border-radius:12px;line-height:1.35;word-wrap:break-word;white-space:pre-wrap}.mine .bubble{background:#163427;border:1px solid #1e3a2f}.theirs .bubble{background:#101827;border:1px solid #2b3647}.meta{font-size:11px;color:#93a3b5;margin-bottom:4px}.system .bubble{background:#111827;border:1px dashed #334155;font-style:italic;opacity:.9}
+    :root{
+      --bg:#0b1220; --panel:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --accent:#22c55e; --danger:#ef4444; --border:#1f2937;
+    }
+    *{ box-sizing:border-box }
+    body{ margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif; background:radial-gradient(1200px 600px at 70% -10%, rgba(34,197,94,.08), transparent) , linear-gradient(180deg,#0b1220,#0f172a 60%, #0b1220); color:var(--text)}
+    .wrap{ max-width:1000px; margin:24px auto; padding:16px }
+    .card{ background:rgba(17,24,39,.75); backdrop-filter: blur(8px); border:1px solid var(--border); border-radius:18px; overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,.35) }
+    header{ padding:16px 20px; display:flex; gap:12px; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border) }
+    h1{ margin:0; font-size:20px; letter-spacing:.2px }
+    .muted{ color:var(--muted) }
+
+    .grid{ display:grid; gap:12px }
+    .controls{ padding:16px; display:grid; gap:12px; grid-template-columns: 1.2fr 1fr auto auto; align-items:end }
+    @media (max-width: 860px){ .controls{ grid-template-columns: 1fr 1fr } }
+
+    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px }
+    input[type=text], input[type=url], input[type=number], textarea{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#0b1220; color:var(--text); outline:none }
+    input:focus, textarea:focus{ border-color:#334155; box-shadow:0 0 0 3px rgba(51,65,85,.35) }
+
+    button{ border:0; padding:10px 14px; border-radius:10px; background:var(--accent); color:#062c16; cursor:pointer; font-weight:700 }
+    button.secondary{ background:#1f2937; color:#cbd5e1 }
+    button.ghost{ background:transparent; border:1px solid #334155; color:#cbd5e1 }
+    button:disabled{ opacity:.55; cursor:not-allowed }
+
+    details{ background:#0b1220; border:1px solid var(--border); border-radius:12px; padding:8px 12px }
+    summary{ cursor:pointer; color:#cbd5e1; font-weight:600; padding:6px 0 }
+
+    .chat{ padding:0 16px 16px; display:grid; grid-template-rows: minmax(420px, 62vh) auto; gap:12px }
+    .messages{ background:#0b1220; border:1px solid var(--border); border-radius:14px; padding:12px; overflow:auto; scroll-behavior:smooth }
+    .msg{ margin:10px 0; display:flex; gap:10px; align-items:flex-start }
+    .bubble{ max-width:78%; padding:10px 12px; border-radius:12px; line-height:1.35; word-wrap:break-word; white-space:pre-wrap; }
+    .mine .bubble{ background:#163427; border:1px solid #1e3a2f }
+    .theirs .bubble{ background:#101827; border:1px solid #2b3647 }
+    .meta{ font-size:11px; color:#93a3b5; margin-bottom:4px }
+    .system .bubble{ background:#111827; border:1px dashed #334155; font-style:italic; opacity:.9 }
+
+    .composer{ display:grid; grid-template-columns: 1fr auto; gap:10px }
+    textarea{ resize:none; height:52px }
+
+    .foot{ padding:12px 16px; font-size:12px; color:#94a3b8; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap }
+    .badge{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid #334155; background:#0b1220 }
+    .dot{ width:8px; height:8px; border-radius:99px; background:var(--danger) }
+    .dot.ok{ background:var(--accent) }
+    .small{ font-size:11px; color:#9ca3af }
+
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+    .kpi{ display:grid; grid-template-columns: repeat(4, minmax(120px,1fr)); gap:8px }
+    .kpi .tile{ background:#0b1220; border:1px solid var(--border); border-radius:12px; padding:10px 12px }
+    .tile h4{ margin:0; font-size:12px; color:#93a3b5 }
+    .tile .v{ margin-top:6px; font-weight:700 }
+    code.inline{ background:#0b1220; border:1px solid #334155; padding:2px 6px; border-radius:6px }
+    .pill{ padding:4px 8px; border:1px solid #334155; border-radius:20px; font-size:11px }
+    .typing{ font-size:12px; color:#cbd5e1; opacity:.8 }
   </style>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
-<div class="wrap">
-<div class="card">
-<header>
-<h1>🔗 P2P Sohbet <span class="muted">(Şifreli)</span></h1>
-<div class="row">
-<span class="muted" id="status">Hazır…</span>
-</div>
-</header>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <h1>🔗 P2P Sohbet <span class="muted">(WebRTC • Sohbet Kimliği)</span></h1>
+        <div class="row">
+          <span class="pill" id="httpsWarn" hidden>HTTPS gerekli olabilir</span>
+          <span class="muted" id="status">Hazır…</span>
+        </div>
+      </header>
 
-<div class="controls">
-<div>
-<label for="room">Sohbet Kimliği</label>
-<input id="room" type="text" placeholder="ör. fen8a-sinif" autocomplete="off" />
-</div>
-<div>
-<label for="nick">Takma Ad</label>
-<input id="nick" type="text" placeholder="ör. ugur" autocomplete="nickname" />
-</div>
-<div>
-<label for="password">Sohbet Şifresi</label>
-<input id="password" type="text" placeholder="Şifre belirle" autocomplete="off" />
-</div>
-<div class="row">
-<button id="hostBtn" class="secondary">Sunucu (Host) Ol</button>
-<button id="joinBtn" class="secondary">Katıl</button>
-</div>
-</div>
+      <div class="controls">
+        <div>
+          <label for="room">Sohbet Kimliği</label>
+          <input id="room" type="text" placeholder="ör. fen8a-sinif" autocomplete="off" />
+        </div>
+        <div>
+          <label for="nick">Takma Ad</label>
+          <input id="nick" type="text" placeholder="ör. ugur" autocomplete="nickname" />
+        </div>
+        <div class="row">
+          <button id="hostBtn" class="secondary" title="Odayı kur (diğerleri sana bağlanır)">Sunucu (Host) Ol</button>
+          <button id="joinBtn" class="secondary" title="Mevcut odaya bağlan">Katıl</button>
+        </div>
+        <div class="row">
+          <button id="copyLink" class="ghost">Bağlantıyı Kopyala</button>
+          <button id="leaveBtn" class="ghost" disabled>Odadan Ayrıl</button>
+        </div>
+      </div>
 
-<div class="chat">
-<div id="messages" class="messages" aria-live="polite"></div>
-<textarea id="input" placeholder="Mesaj yaz…" disabled></textarea>
-<button id="sendBtn" disabled>Gönder</button>
-</div>
-</div>
-</div>
+      <div class="grid" style="padding:0 16px 12px">
+        <details>
+          <summary>🔧 Gelişmiş Ayarlar (Sinyal & ICE)</summary>
+          <div class="grid" style="margin-top:8px; grid-template-columns: repeat(6, 1fr); gap:10px">
+            <div style="grid-column: span 2">
+              <label>Peer Host</label>
+              <input id="cfgHost" type="text" placeholder="0.peerjs.com" />
+            </div>
+            <div>
+              <label>Port</label>
+              <input id="cfgPort" type="number" placeholder="443" />
+            </div>
+            <div>
+              <label>Path</label>
+              <input id="cfgPath" type="text" placeholder="/" />
+            </div>
+            <div>
+              <label>Secure (HTTPS)</label>
+              <input id="cfgSecure" type="text" placeholder="true" />
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label>ICE Servers (JSON)</label>
+              <textarea id="cfgIce" rows="3" placeholder='[{"urls":"stun:stun.l.google.com:19302"}]'></textarea>
+            </div>
+            <div class="row" style="grid-column: 1 / -1; justify-content: flex-end">
+              <button id="cfgReset" class="ghost">Varsayılanları Yükle</button>
+              <button id="cfgApply" class="ghost">Ayarları Kullan</button>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div class="grid" style="padding:0 16px 10px">
+        <div class="kpi">
+          <div class="tile"><h4>Durum</h4><div class="v" id="kDurum">Bekliyor</div></div>
+          <div class="tile"><h4>Bağlı Kişi</h4><div class="v" id="kPeers">0</div></div>
+          <div class="tile"><h4>ICE</h4><div class="v" id="kIce">—</div></div>
+          <div class="tile"><h4>RTT (ms)</h4><div class="v" id="kRtt">—</div></div>
+        </div>
+      </div>
+
+      <div class="chat">
+        <div id="messages" class="messages" aria-live="polite"></div>
+        <div class="composer">
+          <textarea id="input" placeholder="Mesaj yaz…" disabled></textarea>
+          <div class="grid" style="grid-template-columns:auto auto; gap:8px">
+            <button id="sendBtn" disabled>Gönder</button>
+            <button id="pingBtn" class="ghost" disabled>Ping</button>
+          </div>
+        </div>
+        <div class="typing" id="typing" style="padding:0 4px" hidden>Birisi yazıyor…</div>
+      </div>
+
+      <div class="foot">
+        <div class="badge"><span class="dot" id="connDot"></span><span id="connText">Bağlantı yok</span></div>
+        <div>
+          <span class="small">WebRTC veri kanalı (DTLS). En iyi sonuç için kendi PeerJS/TURN sunucunla kullan.</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
 (() => {
-const qs = s => document.querySelector(s);
-const $room = qs('#room'); const $nick = qs('#nick'); const $password = qs('#password'); const $messages = qs('#messages'); const $input = qs('#input'); const $send = qs('#sendBtn'); const $host = qs('#hostBtn'); const $join = qs('#joinBtn');
+  const qs = (s) => document.querySelector(s);
+  const $room = qs('#room');
+  const $nick = qs('#nick');
+  const $messages = qs('#messages');
+  const $input = qs('#input');
+  const $send = qs('#sendBtn');
+  const $ping = qs('#pingBtn');
+  const $host = qs('#hostBtn');
+  const $join = qs('#joinBtn');
+  const $copy = qs('#copyLink');
+  const $leave = qs('#leaveBtn');
+  const $status = qs('#status');
+  const $dot = qs('#connDot');
+  const $connText = qs('#connText');
+  const $kDurum = qs('#kDurum');
+  const $kPeers = qs('#kPeers');
+  const $kIce = qs('#kIce');
+  const $kRtt = qs('#kRtt');
+  const $typing = qs('#typing');
+  const $httpsWarn = qs('#httpsWarn');
 
-let peer = null; let isHost = false; const conns = new Map(); let conn = null;
+  // Advanced config inputs
+  const $cfgHost = qs('#cfgHost');
+  const $cfgPort = qs('#cfgPort');
+  const $cfgPath = qs('#cfgPath');
+  const $cfgSecure = qs('#cfgSecure');
+  const $cfgIce = qs('#cfgIce');
+  const $cfgApply = qs('#cfgApply');
+  const $cfgReset = qs('#cfgReset');
 
-function encrypt(text, password){
-  if(!password) return text;
-  return btoa(unescape(encodeURIComponent(text.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^password.charCodeAt(i%password.length))).join(''))));
-}
-function decrypt(text, password){
-  if(!password) return text;
-  try{
-    const s = decodeURIComponent(escape(atob(text)));
-    return s.split('').map((c,i)=>String.fromCharCode(c.charCodeAt(0)^password.charCodeAt(i%password.length))).join('');
-  }catch{return '***HATALI MESAJ***';}
-}
+  // State
+  let peer = null;              // local PeerJS instance
+  let isHost = false;           // am I the host?
+  const conns = new Map();      // id -> DataConnection (host only)
+  let conn = null;              // single connection when joining
+  let typingTimer = null;       // typing indicator
+  let lastPingSent = 0;
 
-function addMsg(author,text,mine=false){
-  const row = document.createElement('div');
-  row.className = 'msg ' + (mine?'mine':'theirs');
-  row.innerHTML = `<div class="meta">${author} • ${new Date().toLocaleTimeString()}</div><div class="bubble">${text}</div>`;
-  $messages.appendChild(row);
-  $messages.scrollTop = $messages.scrollHeight;
-}
-
-function peerInit(idOrUndefined){
-  try{ if(peer) peer.destroy(); }catch{}
-  return new Peer(idOrUndefined, {host:'0.peerjs.com', port:443, path:'/', secure:true});
-}
-
-function setupHost(){
-  const roomId = $room.value.trim(); const nick = $nick.value.trim()||'host'; const pwd = $password.value;
-  if(!roomId) return alert('Sohbet Kimliği gir.');
-  isHost = true;
-  peer = peerInit(roomId);
-  peer.on('open', id => { addMsg('Sistem', `Oda açıldı: ${id}`); enableChat(true); });
-  peer.on('connection', c => {
-    conns.set(c.peer,c);
-    c.on('data', d => onData(c,d,pwd));
+  const defaultCfg = () => ({
+    host: '0.peerjs.com', port: 443, path: '/', secure: true,
+    config: { iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
+      // TURN örneği: { urls:'turn:turn.yourserver.com:3478', username:'user', credential:'pass' }
+    ]}
   });
-}
 
-function setupJoin(){
-  const roomId = $room.value.trim(); const nick = $nick.value.trim()||'kullanici'; const pwd = $password.value;
-  if(!roomId) return alert('Sohbet Kimliği gir.');
-  isHost = false;
-  peer = peerInit();
-  peer.on('open', id=>{ conn = peer.connect(roomId,{reliable:true}); bindConn(conn,pwd); });
-}
+  function loadCfg(){
+    let cfg = null;
+    try{ cfg = JSON.parse(localStorage.getItem('p2p_cfg')||'null'); }catch{}
+    if (!cfg) cfg = defaultCfg();
+    $cfgHost.value = cfg.host ?? '0.peerjs.com';
+    $cfgPort.value = cfg.port ?? 443;
+    $cfgPath.value = cfg.path ?? '/';
+    $cfgSecure.value = String(cfg.secure ?? true);
+    try{ $cfgIce.value = JSON.stringify(cfg.config?.iceServers || [], null, 2); }catch{ $cfgIce.value = '[]'; }
+    return cfg;
+  }
+  function saveCfg(){
+    const cfg = {
+      host: $cfgHost.value || '0.peerjs.com',
+      port: Number($cfgPort.value || 443),
+      path: $cfgPath.value || '/',
+      secure: ($cfgSecure.value||'true').toLowerCase() !== 'false',
+      config: { iceServers: [] }
+    };
+    try{ cfg.config.iceServers = JSON.parse($cfgIce.value||'[]'); }catch{ alert('ICE JSON biçimi hatalı'); }
+    localStorage.setItem('p2p_cfg', JSON.stringify(cfg));
+    return cfg;
+  }
+  function applyCfg(){ return saveCfg(); }
 
-function bindConn(c,pwd){
-  c.on('open', ()=>{ enableChat(true); });
-  c.on('data', d=>onData(c,d,pwd));
-}
+  $cfgReset?.addEventListener('click', () => { localStorage.removeItem('p2p_cfg'); loadCfg(); setStatus('Varsayılan ayarlar yüklendi'); });
+  $cfgApply?.addEventListener('click', () => { applyCfg(); setStatus('Ayarlar kaydedildi'); });
 
-function onData(c,d,pwd){
-  if(d.type==='msg') addMsg(d.n,decrypt(d.t,pwd),false);
-}
+  // URL param/fragment hydration
+  try {
+    const u = new URL(location.href);
+    const rid = u.searchParams.get('room') || u.hash.replace('#','');
+    if (rid) $room.value = rid;
+    const nk = u.searchParams.get('nick');
+    if (nk) $nick.value = nk;
+  } catch {}
+  // load saved nick/cfg
+  try { const n = localStorage.getItem('p2p_nick'); if (n) $nick.value = n; } catch{}
+  const cfgInit = loadCfg();
 
-function sendCurrent(){
-  const text = $input.value.trim(); const pwd = $password.value; if(!text) return;
-  const nick = $nick.value.trim()||'ben';
-  addMsg(nick,text,true);
-  const pkt = {type:'msg',n:nick,t:encrypt(text,pwd)};
-  if(isHost){for(const [_,conn] of conns) conn.send(pkt);} else if(conn && conn.open) conn.send(pkt);
-  $input.value='';
-}
+  // HTTPS hint
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    $httpsWarn.hidden = false;
+  }
 
-function enableChat(on){ $input.disabled=!on; $send.disabled=!on; }
-$send.addEventListener('click',sendCurrent);
-$input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCurrent();}});
-$host.addEventListener('click',setupHost);
-$join.addEventListener('click',setupJoin);
+  function logLine(html, cls='theirs'){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + cls;
+    wrap.innerHTML = `<div class="bubble">${html}</div>`;
+    $messages.appendChild(wrap);
+    $messages.scrollTop = $messages.scrollHeight;
+  }
+  function addMsg(author, text, mine=false){
+    const row = document.createElement('div');
+    row.className = 'msg ' + (mine ? 'mine' : 'theirs');
+    const meta = `<div class="meta">${escapeHtml(author)} • ${new Date().toLocaleTimeString()}</div>`;
+    row.innerHTML = `<div>${meta}<div class="bubble">${escapeHtml(text)}</div></div>`;
+    $messages.appendChild(row);
+    $messages.scrollTop = $messages.scrollHeight;
+  }
+  function addSystem(text){
+    const row = document.createElement('div');
+    row.className = 'msg system';
+    const meta = `<div class="meta">Sistem • ${new Date().toLocaleTimeString()}</div>`;
+    row.innerHTML = `<div>${meta}<div class="bubble">${escapeHtml(text)}</div></div>`;
+    $messages.appendChild(row);
+    $messages.scrollTop = $messages.scrollHeight;
+  }
+  function setStatus(t){ $status.textContent = t; $kDurum.textContent = t; }
+  function setConn(ok, txt){ $dot.classList.toggle('ok', !!ok); $connText.textContent = txt || (ok ? 'Bağlı' : 'Bağlantı yok'); }
+  function enableChat(on){ $input.disabled = !on; $send.disabled = !on; $ping.disabled = !on; $leave.disabled = on ? false : true; }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
+
+  function broadcast(packet, exceptId){
+    for(const [id,c] of conns){ if (id === exceptId) continue; try { c.open && c.send(packet); } catch {} }
+  }
+
+  function peerInit(idOrUndefined, cfg){
+    try { if (peer) peer.destroy(); } catch {}
+    const p = new Peer(idOrUndefined, cfg);
+    p.on('error', e => { setStatus('Hata: ' + e.type); console.error(e); alert('Peer hata: ' + e); });
+    return p;
+  }
+
+  function setupHost(){
+    const roomId = ($room.value||'').trim();
+    const nick = ($nick.value||'').trim() || 'host';
+    if (!roomId) return alert('Bir Sohbet Kimliği gir.');
+    isHost = true;
+    setStatus('Sohbet kuruluyor (host)…');
+    localStorage.setItem('p2p_nick', nick);
+
+    const cfg = loadCfg();
+    peer = peerInit(roomId, cfg);
+
+    peer.on('open', id => {
+      setStatus(`Oda hazır: ${id}`);
+      setConn(true, 'Katılımlar bekleniyor…');
+      logLine(`<b>Oda açıldı:</b> <code class="inline">${id}</code>. Katılımcılar bu kimlikle bağlanabilir.`);
+      enableChat(true);
+      addSystem(`${nick} odayı açtı`);
+      updateKpi();
+    });
+
+    peer.on('connection', c => {
+      conns.set(c.peer, c);
+      $kPeers.textContent = String(conns.size);
+      setConn(true, `${conns.size} kişi bağlı`);
+
+      c.on('data', d => onDataFrom(c, d));
+      c.on('iceStateChanged', s => { $kIce.textContent = s; });
+      c.on('close', () => {
+        conns.delete(c.peer);
+        $kPeers.textContent = String(conns.size);
+        setConn(conns.size>0, `${conns.size} kişi bağlı`);
+        broadcast({type:'system', t:`Bir katılımcı ayrıldı`});
+      });
+      c.on('error', (e) => console.warn('conn error', e));
+    });
+  }
+
+  function setupJoin(){
+    const roomId = ($room.value||'').trim();
+    const nick = ($nick.value||'').trim() || ('kullanici-' + Math.floor(Math.random()*999));
+    if (!roomId) return alert('Bir Sohbet Kimliği gir.');
+
+    isHost = false;
+    setStatus('Odaya bağlanılıyor…');
+    localStorage.setItem('p2p_nick', nick);
+
+    const cfg = loadCfg();
+    peer = peerInit(undefined, cfg);
+
+    peer.on('open', id => {
+      conn = peer.connect(roomId, { reliable:true });
+      bindJoinConn(conn, nick);
+    });
+  }
+
+  function bindJoinConn(c, nick){
+    c.on('open', () => {
+      setStatus(`Bağlı: ${c.peer}`);
+      setConn(true, 'Bağlı');
+      enableChat(true);
+      c.send({type:'join', n:nick});
+      updateKpi();
+    });
+    c.on('data', d => onDataFrom(c, d));
+    c.on('iceStateChanged', s => { $kIce.textContent = s; });
+    c.on('close', () => { setConn(false,'Bağlantı yok'); enableChat(false); addSystem('Bağlantı kapandı'); });
+    c.on('error', e => { console.error(e); alert('Bağlantı hatası: '+e); });
+  }
+
+  function onDataFrom(c, d){
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'msg') addMsg(d.n, d.t, false);
+    if (d.type === 'system') addSystem(d.t);
+    if (d.type === 'join') {
+      addSystem(`${d.n} katıldı`);
+      broadcast({type:'system', t:`${d.n} katıldı`}, c.peer);
+    }
+    if (d.type === 'typing') {
+      showTyping();
+      if (isHost) broadcast(d, c.peer);
+    }
+    if (d.type === 'ping') { // echo to measure RTT
+      const now = performance.now();
+      const rtt = Math.round(now - d.ts);
+      $kRtt.textContent = String(rtt);
+      if (isHost) broadcast(d, c.peer);
+    }
+  }
+
+  function sendCurrent(){
+    const text = ($input.value||'').trim();
+    if (!text) return;
+    const nick = ($nick.value||'').trim() || (isHost ? 'host' : 'ben');
+    addMsg(nick, text, true);
+
+    const pkt = { type:'msg', n: nick, t: text };
+    if (isHost){
+      broadcast(pkt);
+    } else if (conn && conn.open){
+      conn.send(pkt);
+    }
+    $input.value = '';
+    $input.focus();
+  }
+
+  function leaveRoom(){
+    try {
+      if (isHost){ for(const [,c] of conns){ try{ c.close(); }catch{} } conns.clear(); }
+      else if (conn) { try{ conn.close(); }catch{} }
+      if (peer) { try{ peer.destroy(); }catch{} }
+    } finally { enableChat(false); setConn(false, 'Bağlantı yok'); setStatus('Ayrıldın'); $kPeers.textContent = '0'; $kIce.textContent = '—'; $kRtt.textContent = '—'; }
+  }
+
+  function copyLink(){
+    const r = ($room.value||'').trim(); if (!r) return alert('Kimlik gir.');
+    const u = new URL(location.href);
+    u.searchParams.set('room', r);
+    const nk = ($nick.value||'').trim(); if (nk) u.searchParams.set('nick', nk);
+    navigator.clipboard.writeText(u.toString()).then(()=>{ setStatus('Bağlantı kopyalandı'); });
+  }
+
+  function showTyping(){
+    $typing.hidden = false; clearTimeout(typingTimer);
+    typingTimer = setTimeout(()=>{ $typing.hidden = true; }, 1200);
+  }
+
+  function sendTyping(){
+    const pkt = { type:'typing' };
+    if (isHost) broadcast(pkt);
+    else if (conn && conn.open) conn.send(pkt);
+  }
+
+  function ping(){
+    const pkt = { type:'ping', ts: performance.now() };
+    lastPingSent = pkt.ts;
+    if (isHost) broadcast(pkt);
+    else if (conn && conn.open) conn.send(pkt);
+  }
+
+  function updateKpi(){
+    try{
+      const pcs = (peer?._connections) ? Object.values(peer._connections).flat() : [];
+      // PeerJS private internals; may not exist across versions
+      $kPeers.textContent = isHost ? String(conns.size) : (conn && conn.open ? '1' : '0');
+    }catch{}
+  }
+
+  $send.addEventListener('click', sendCurrent);
+  $ping.addEventListener('click', ping);
+  $input.addEventListener('input', sendTyping);
+  $input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendCurrent(); } });
+  $host.addEventListener('click', setupHost);
+  $join.addEventListener('click', setupJoin);
+  $leave.addEventListener('click', leaveRoom);
+  $copy.addEventListener('click', copyLink);
+
 })();
 </script>
 </body>
